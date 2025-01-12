@@ -134,16 +134,17 @@ void insert_mode() {
      noecho();
 }
 void move_cursor(char c) {
-     if (c != ERR && c != ' ') {
-          if (c == 'a')
-               move(x, --y);
-          else if (c == 'w')
-               move(--x, y);
-          else if (c == 'd')
-               move(x, ++y);
-          else if (c == 's')
-               move(++x, y);
-          check_cursor();
+   switch (c) {
+    case 'a':
+        move(x, --y); break;
+    case 'w': 
+        move(--x, y); break;
+    case 'd': 
+        move(x, ++y); break;
+    case 's':
+        move(++x, y); break;
+     }
+     check_cursor();
      }
      refresh();
 }
