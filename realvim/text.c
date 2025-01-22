@@ -31,8 +31,8 @@ void logger(char *message) {
 }
 
 void init() {
-     error_log_path = "/home/real/code/text_editor/error_log.txt";
-     currentfile = "/home/real/code/text_editor/sample.txt";
+     error_log_path = "error_log.txt";
+     currentfile = "sample.txt";
      lines = malloc(1 * sizeof(char *));
      initscr();
      getmaxyx(stdscr, rows, cols);
