@@ -1,6 +1,8 @@
 # realvim
 minimal text editor in c inspired by neovim
-![image](https://github.com/user-attachments/assets/d84121a0-91dd-4347-9ee1-937068edcb23)
+
+![image](https://github.com/user-attachments/assets/95eb59a7-dc0d-423e-89a6-a9bdcd2203bf)
+
 # Text Editor Navigation Guide
 
 | **Key**   | **Mode**      | **Action**                     |
