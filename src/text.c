@@ -178,7 +178,7 @@ void read_file(char path[]) {
      token = strtok(text, "\n");
      while (token) {
           if (x < rows - 2) {
-               printw("%s %d\n", token, nlines);
+               printw("%s\n", token);
                move(++x, 3);
           }
           nlines++;
