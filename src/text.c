@@ -79,9 +79,9 @@ void init() {
      noecho();
      clear();
      refresh();
-     move(rows - rows, (cols / 2) - 7);
+     move(rows - rows, (cols / 2) - 4);
      attron(COLOR_PAIR(1));
-     printw("C TEXT EDITOR");
+     printw("REAL-VIM");
      attron(COLOR_PAIR(2));
      x = 1;
      y = 3;
@@ -135,10 +135,12 @@ void check_cursor() {
      }
      if (x <= 0) {
           x = 1;
+          changepage(2);
           move(x, y);
      }
      if (x >= rows - 2) {
           x = rows - 3;
+          changepage(1);
           move(x, y);
      }
 }
