@@ -9,6 +9,7 @@ minimal text editor in c inspired by neovim
 | `q`       | **Command**   | Quit the editor.               |
 | `i`       | **Insert**    | Switch to insert mode.         |
 | `Escape`  | **Visual**    | Return to visual/command mode. |
+| `:`       | **Command**   | Enter command mode             |
 
 ### Usage Notes:
 - **Navigation Mode:** Use `wasd` to move the cursor around within the document.
