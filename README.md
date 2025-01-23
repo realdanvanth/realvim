@@ -4,8 +4,15 @@ minimal text editor in c inspired by neovim
 ![image](https://github.com/user-attachments/assets/015dee65-f9ac-424a-b597-a8d10dcec538)
 
 **Installation and Execution**
-```bash
-https://github.com/realdanvanth/realvim.git
+
+```install
+git clone https://github.com/realdanvanth/realvim.git
+```
+```execute
+cd ~/realvim/src && gcc -Wall "text.c" -o text -lncurses && ./text text.c
+```
+```
+cd ~/realvim/src && gcc -Wall "text.c" -o text -lncurses && ./text sample.txt
 ```
 
 # Text Editor Navigation Guide
