@@ -11,7 +11,37 @@ int cols;
 char **lines;
 char *error_log_path;
 char *currentfile;
+int lineindex = 0;
 int nlines;
+void changepage(int x) {
+     if (x == 1) {
+          if (lineindex >= nlines - 2) {
+               lineindex = nlines - 3;
+               return;
+          } else {
+               lineindex++;
+               for (int i = 1; i < rows - 2; i++) {
+                    move(i, 3);
+                    clrtoeol();
+                    printw("%s", lines[lineindex + i]);
+                    refresh();
+               }
+          }
+     } else {
+          if (lineindex < 0) {
+               lineindex = 0;
+               return;
+          } else {
+               lineindex--;
+               for (int i = 1; i < rows - 2; i++) {
+                    move(i, 3);
+                    clrtoeol();
+                    printw("%s", lines[lineindex + i]);
+                    refresh();
+               }
+          }
+     }
+}
 void logger(char *message) {
      time_t rawtime;
      struct tm *timeinfo;
@@ -32,8 +62,9 @@ void logger(char *message) {
 
 void init() {
      error_log_path = "error_log.txt";
-     currentfile = "sample.txt";
-     lines = malloc(1 * sizeof(char *));
+     // currentfile = "error_log.txt";
+     nlines = 0;
+     lines = NULL;
      initscr();
      getmaxyx(stdscr, rows, cols);
      if (curs_set(1) == ERR) { // make cursor rectangle
@@ -48,9 +79,9 @@ void init() {
      noecho();
      clear();
      refresh();
-     move(rows - rows, (cols / 2) - 4);
+     move(rows - rows, (cols / 2) - 7);
      attron(COLOR_PAIR(1));
-     printw("REAL-VIM");
+     printw("C TEXT EDITOR");
      attron(COLOR_PAIR(2));
      x = 1;
      y = 3;
@@ -145,9 +176,21 @@ void read_file(char path[]) {
      token = strtok(text, "\n");
      while (token) {
           if (x < rows - 2) {
-               printw("%s\n", token);
+               printw("%s %d\n", token, nlines);
                move(++x, 3);
           }
+          nlines++;
+          lines = (char **)realloc(lines, nlines * sizeof(char *));
+          if (lines == NULL) {
+               logger("realloc failed");
+               return;
+          }
+          lines[nlines - 1] = (char *)malloc((cols - 3) * sizeof(char));
+          if (lines[nlines - 1] == NULL) {
+               logger("malloc fail");
+               return;
+          }
+          strcpy(lines[nlines - 1], token);
           token = strtok(NULL, "\n");
      }
      move(1, 3);
@@ -254,12 +297,12 @@ void move_cursor(char c) {
      check_cursor();
      refresh();
 }
-
 int main(int argc, char *argv[]) {
      // rows = atoi(argv[1]);
-     // cols = atoi(argv[2]);
-     // writer();
+     //  cols = atoi(argv[2]);
+     //  writer();
      init();
+     currentfile = argv[1];
      read_file(currentfile);
      x = 1;
      y = 3;
@@ -277,8 +320,8 @@ int main(int argc, char *argv[]) {
                     terminate();
                     return 0;
                }
-          }
-
+          } else if (c >= 49 && c <= 57)
+               changepage(c - '0');
           else
                move_cursor(c);
           refresh();
