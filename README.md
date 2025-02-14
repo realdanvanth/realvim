@@ -3,7 +3,8 @@ minimal text editor in c inspired by neovim
 
 ![image](https://github.com/user-attachments/assets/015dee65-f9ac-424a-b597-a8d10dcec538)
 
-![image](https://github.com/user-attachments/assets/c07da415-078d-4c87-833d-92f071749152)
+![image](https://github.com/user-attachments/assets/e04360ad-84ec-4e8e-a3c4-50dedf93a23f)
+
 
 
 **Installation and Execution**
