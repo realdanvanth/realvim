@@ -20,10 +20,10 @@ int XBOUNDS;
 int YBOUND;
 char *C_HL_keywords[] = {
     /* C Keywords */
-    "auto",     "break",  "case",     "continue", "default", "do",
-    "else",     "enum",   "extern",   "for",      "goto",    "if",
-    "register", "return", "sizeof",   "static",   "struct",  "switch",
-    "typedef",  "union",  "volatile", "while",    "NULL"};
+    "auto",   "break",    "case",   "continue", "default", "do",
+    "else",   "enum",     "extern", "for",      "goto",    "if",
+    "int",    "register", "return", "sizeof",   "static",  "struct",
+    "switch", "typedef",  "union",  "volatile", "while",   "NULL"};
 int key_word_size = 23;
 
 int startlineindex = 0;
@@ -70,10 +70,26 @@ int highlight(char *currentline, int index) {
           return index + 1;
      }
      if (isdigit(currentline[index])) {
-          attron(COLOR_PAIR(5));
+          attron(COLOR_PAIR(6));
           printw("%c", currentline[index]);
-          attroff(COLOR_PAIR(5));
+          attroff(COLOR_PAIR(6));
           return index + 1;
+     }
+     if (currentline[index] == '#' || currentline[index] == '/') {
+          int j = 0;
+          char output[50] = "";
+          while (currentline[index + j] != '\n' &&
+                 currentline[index + j] != '\0') {
+               int len = strlen(output);
+               output[len] = currentline[index + j];
+               output[len + 1] = '\0';
+               j++;
+          }
+          attron(COLOR_PAIR(7));
+          printw("%s", output);
+          attroff(COLOR_PAIR(7));
+          return index + j;
+
      } else {
           int j = 0;
           char output[50] = "";
@@ -87,15 +103,23 @@ int highlight(char *currentline, int index) {
           }
           int higlight = binarysearch(output, 0, key_word_size - 1);
           if (higlight != -1) {
-               attron(COLOR_PAIR(6));
+               attron(COLOR_PAIR(5));
                printw("%s", output);
-               attroff(COLOR_PAIR(6));
+               attroff(COLOR_PAIR(5));
           } else {
                printw("%s", output);
           }
           return index + j;
      }
 }
+void display(char *line) {
+     int index = 0;
+     while (index < strlen(line)) {
+          index = highlight(line, index);
+     }
+     refresh();
+}
+
 void breakline(char *currentline) {
      char *copy = strdup(currentline);
      char *token = strtok(copy, " ");
@@ -156,10 +180,7 @@ void changepage(int x) {
                // clrtoeol();
                // printw("%s", lines[tempindex--]);
                // breakline(lines[tempindex]);
-               int index = 0;
-               while (index < strlen(lines[tempindex])) {
-                    index = highlight(lines[tempindex], index);
-               }
+               display(lines[tempindex]);
                tempindex--;
                refresh();
           }
@@ -184,11 +205,7 @@ void changepage(int x) {
                // clrtoeol();
                // printw("%s", lines[tempindex++]);
                // breakline(lines[tempindex]);
-               int index = 0;
-               while (index <= strlen(lines[tempindex])) {
-                    index = highlight(lines[tempindex], index);
-               }
-
+               display(lines[tempindex]);
                tempindex++;
                refresh();
           }
@@ -342,12 +359,6 @@ void read_file(char path[]) {
      char *token;
      token = strtok(text, "\n");
      while (token) {
-          if (x < XBOUNDS) {
-               // breakline(token);
-               // move(++x, YBOUND);
-               printw("%s\n", token);
-               move(++x, YBOUND);
-          }
           nlines++;
           lines = (char **)realloc(lines, nlines * sizeof(char *));
           if (lines == NULL) {
@@ -360,13 +371,34 @@ void read_file(char path[]) {
                return;
           }
           strcpy(lines[nlines - 1], token);
+          /*if (x < XBOUNDS) {
+               // breakline(token);
+               // move(++x, YBOUND);
+               // printw("%s\n", lines[nlines - 1]);
+               int index = 0;
+               while (index <= strlen(lines[nlines - 1])) {
+                    index = highlight(lines[nlines - 1], index);
+               }
+               // move(++x, YBOUND);
+               refresh();
+          }*/
+          if (x < XBOUNDS)
+               ++x;
+
           token = strtok(NULL, "\n");
      }
      move(1, YBOUND);
      refresh();
 }
-
-void display(char c) {
+void initial_display() {
+     move(1, YBOUND);
+     for (int i = 1; i < XBOUNDS; i++) {
+          move(i, YBOUND);
+          display(lines[i - 1]);
+     }
+     refresh();
+}
+void display1(char c) {
      move(x, y++);
      check_cursor();
      printw("%c", c);
@@ -476,9 +508,12 @@ int main(int argc, char *argv[]) {
      prctl(PR_SET_NAME, "realvim", 0, 0, 0);
      currentfile = argv[1];
      read_file(currentfile);
+     initial_display();
+     // initial_display();
      logger("WRITING IS DONE");
      // char *test = "int main printf(hilight this bitch)";
      // breakline(test);
+     // changepage(1);
      logger("done");
      // int index = binarysearch("for", 0, key_word_size);
      //  move(rows - rows, (cols / 2) + 4);
@@ -487,6 +522,8 @@ int main(int argc, char *argv[]) {
      // printw("%d", binarysearch("casawd{} e -1", 0, 23));
      x = 1;
      y = YBOUND;
+     // startlineindex = 1;
+     // changepage(2);
      move(1, YBOUND);
      char c;
      read(STDIN_FILENO, &c, 1);
