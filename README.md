@@ -4,9 +4,6 @@ minimal text editor in c inspired by neovim
 ![image](https://github.com/user-attachments/assets/0ed04b35-bb1f-4230-9923-c75384e17fd8)
 
 
-![image](https://github.com/user-attachments/assets/015dee65-f9ac-424a-b597-a8d10dcec538)
-
-
 **Installation and Execution**
 
 ```install
@@ -35,3 +32,4 @@ cd ~/realvim/src && gcc -Wall "text.c" -o text -lncurses && ./text sample.txt
 - **Quiting the Editor:** Press `q` to exit the editor. Ensure all changes are saved beforehand.
 - **Returning to Visual Mode:** Press `Escape` to leave insert mode and switch back to visual mode.
 
+![image](https://github.com/user-attachments/assets/015dee65-f9ac-424a-b597-a8d10dcec538)
