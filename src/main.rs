@@ -15,6 +15,11 @@ use ropey::Rope;
 use std::{time::Duration};
 use std::fs::{File};
 use std::path::Path;
+use syntect::easy::HighlightLines;
+use syntect::parsing::SyntaxSet;
+use syntect::highlighting::{ThemeSet, Style};
+use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+use syntect_assets::assets::HighlightingAssets;
 #[macro_export]
 macro_rules! eterm{
     (clear) => {stdout().execute(terminal::Clear(terminal::ClearType::All)).unwrap()}; 
@@ -131,10 +136,7 @@ fn visual(terminal:&mut Term) {
     eterm!(color(fg,White));
     eterm!(color(bg,Black));
     eterm!(move(0,0));
-    let mut c:u16 = 0;
-    let padding = (terminal.line as usize+terminal.trows as usize-2).to_string().len();
-    let mut line = 0;
-    while line<terminal.text.len_lines()&&c<terminal.trows-2 {
+    /*while line<terminal.text.len_lines()&&c<terminal.trows-2 {
         eterm!(move(c,0));
         eterm!(color(fg,DarkGreen));
         execute!(stdout(),Print(format!(" {:>width$} ",line,width=padding))).unwrap();
@@ -142,7 +144,8 @@ fn visual(terminal:&mut Term) {
         execute!(stdout(),Print(format!("{}",terminal.text.line(line)))).unwrap();
         line+=1;
         c+=1;
-    }
+    }*/
+    displaytext(&terminal);
     displaybar(&terminal);
     eterm!(move(terminal.cx,terminal.cy));
     loop{
@@ -178,6 +181,29 @@ fn visual(terminal:&mut Term) {
                 _ => {continue;},
             }
         }
+    }
+}
+fn displaytext(terminal:&Term){
+    let assets = HighlightingAssets::from_binary();
+    let theme = assets.get_theme("OneHalfDark");
+    let ps = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+    let syntax = ps.find_syntax_by_extension("java").unwrap();
+    let mut h = HighlightLines::new(syntax, &theme);
+    let mut c:u16 = 0;
+    let padding = (terminal.line as usize+terminal.trows as usize-2).to_string().len();
+    let mut line = 0;
+    while line<terminal.text.len_lines()&&c<terminal.trows-2 {
+        eterm!(move(c,0));
+        eterm!(color(fg,DarkGreen));
+        execute!(stdout(),Print(format!(" {:>width$} ",line,width=padding))).unwrap();
+        eterm!(color(fg,White));
+        let code = terminal.text.line(line).to_string();
+        let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &ps).unwrap();
+        let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
+        print!("{}", escaped);
+        line+=1;
+        c+=1;
     }
 }
 fn command(terminal:&mut Term){
