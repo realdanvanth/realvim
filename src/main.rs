@@ -20,6 +20,9 @@ use syntect::parsing::SyntaxSet;
 use syntect::highlighting::{ThemeSet, Style};
 use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 use syntect_assets::assets::HighlightingAssets;
+use syntect::highlighting;
+use syntect::highlighting::Theme;
+use syntect::parsing::SyntaxReference;
 #[macro_export]
 macro_rules! eterm{
     (clear) => {stdout().execute(terminal::Clear(terminal::ClearType::All)).unwrap()}; 
@@ -96,10 +99,16 @@ struct Term{
     line:usize,
     cx:u16,
     cy:u16, 
+    theme:Theme,
+    ps:SyntaxSet,
+    syntax:SyntaxReference
 }
 fn main(){
     //let mode:Mode = Mode::Logo;
     set_title("realvim");
+    let assets = HighlightingAssets::from_binary();
+    let ps = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
     let (mut cols,mut rows) = eterm!(size);
     let mut terminal = Term{
         trows: rows,
@@ -110,6 +119,9 @@ fn main(){
         line : 0,
         cx:0,
         cy:0,
+        theme: assets.get_theme("OneHalfDark").clone(),
+        syntax: ps.find_syntax_by_extension("rs").unwrap().clone(),
+        ps:SyntaxSet::load_defaults_newlines(),
     };
     logo(&mut terminal);
     //println!("{:?}",terminal);
@@ -236,13 +248,8 @@ fn visual(terminal:&mut Term) {
         }
     }
 }
-fn displaytext(terminal:&Term){
-    let assets = HighlightingAssets::from_binary();
-    let theme = assets.get_theme("OneHalfDark");
-    let ps = SyntaxSet::load_defaults_newlines();
-    let ts = ThemeSet::load_defaults();
-    let syntax = ps.find_syntax_by_extension("rs").unwrap();
-    let mut h = HighlightLines::new(syntax, &theme);
+fn displaytext(terminal:&Term){   
+    let mut h = HighlightLines::new(&terminal.syntax, &terminal.theme);
     let mut c:u16 = 0;
     let padding = (terminal.line as usize+terminal.trows as usize-2).to_string().len();
     let mut line = terminal.line;
@@ -253,7 +260,7 @@ fn displaytext(terminal:&Term){
         queue!(stdout(),Print(format!(" {:>width$} ",line,width=padding))).unwrap();
         qterm!(color(fg,White));
         let code = terminal.text.line(line).to_string();
-        let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &ps).unwrap();
+        let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &terminal.ps).unwrap();
         let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
         queue!(stdout(),Print(format!("{}", escaped)));
         line+=1;
