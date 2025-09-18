@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 #![allow(unused_imports)]
 extern crate crossterm;
-use crossterm::{execute,ExecutableCommand,cursor,terminal};
+use crossterm::{execute,queue,QueueableCommand,ExecutableCommand,cursor,terminal};
 use crossterm::terminal::{enable_raw_mode,disable_raw_mode};
 use crossterm::event::{poll,read,KeyCode,Event};
 use crossterm::style::{Print,SetBackgroundColor,SetForegroundColor,Color};
@@ -44,6 +44,27 @@ macro_rules! eterm{
     (color(fg,$color:ident)) =>{stdout().execute(SetForegroundColor(Color::$color)).unwrap()};
     (color(bg,$color:ident)) =>{stdout().execute(SetBackgroundColor(Color::$color)).unwrap()};
     (print($string:literal)) => {stdout().execute(Print($string.to_string())).unwrap()};
+    (poll($time:expr)) => {poll(Duration::from_millis($time)).unwrap()};
+}
+macro_rules! qterm{
+    (clear) => {stdout().queue(terminal::Clear(terminal::ClearType::All)).unwrap()}; 
+    (clearline($x:expr,$y:expr))=>{
+        eterm!(move($x,0));
+        queue!(stdout(),Print(" ".repeat(($y).into()))).unwrap();
+    };
+    (moveleft)=>{stdout().queue(cursor::MoveLeft(1)).unwrap()};
+    (steadybar)=>{stdout().queue(cursor::SetCursorStyle::SteadyBar).unwrap()};
+    (steadyblock)=>{stdout().queue(cursor::SetCursorStyle::SteadyBlock).unwrap()};
+    (bold)  => {stdout().queue(SetAttribute(Attribute::Bold))};
+    (blink) => {stdout().queue(cursor::EnableBlinking)};
+    (dblink) => {stdout().queue(cursor::DisableBlinking)};
+    (hide) => {stdout().queue(cursor::Hide).unwrap()};
+    (show) => {stdout().queue(cursor::Show).unwrap()};
+    (underline) => {stdout().queue(SetAttribute(Attribute::underline))};
+    (move($x:expr,$y:expr))=> {stdout().queue(cursor::MoveTo($y,$x)).unwrap()};
+    (color(fg,$color:ident)) =>{stdout().queue(SetForegroundColor(Color::$color)).unwrap()};
+    (color(bg,$color:ident)) =>{stdout().queue(SetBackgroundColor(Color::$color)).unwrap()};
+    (print($string:literal)) => {stdout().queue(Print($string.to_string())).unwrap()};
     (poll($time:expr)) => {poll(Duration::from_millis($time)).unwrap()};
 }
 macro_rules! input{
@@ -132,10 +153,7 @@ fn visual(terminal:&mut Term) {
     eterm!(steadyblock);
     eterm!(show);
     eterm!(clear);
-    terminal.mode = Mode::Visual;
-    eterm!(color(fg,White));
-    eterm!(color(bg,Black));
-    eterm!(move(0,0));
+    terminal.mode = Mode::Visual; 
     /*while line<terminal.text.len_lines()&&c<terminal.trows-2 {
         eterm!(move(c,0));
         eterm!(color(fg,DarkGreen));
@@ -147,29 +165,64 @@ fn visual(terminal:&mut Term) {
     }*/
     displaytext(&terminal);
     displaybar(&terminal);
-    eterm!(move(terminal.cx,terminal.cy));
+    let padding = (terminal.line as usize+terminal.trows as usize-2).to_string().len()+2;
+    let mut cx:i32 = terminal.cx as i32;
+    let mut cy:i32 = terminal.cy as i32;
+    if terminal.cy < padding as u16
+    {
+        terminal.cy = padding as u16
+    }
+    eterm!(move(terminal.cx,terminal.cy)); 
     loop{
          if eterm!(poll(50)) {
             match read().unwrap(){
                 Event::Key(event)=>{
                     if event.code==KeyCode::Char('a'){
-                        
+                        cy-=1;
                     }
                     else if event.code==KeyCode::Char('s'){
-
+                        cx+=1;
                     }
                     else if event.code==KeyCode::Char('w'){
-
+                        cx-=1;
                     }
                     else if event.code==KeyCode::Char('d'){
-
+                        cy+=1
                     }
                     else if event.code==KeyCode::Char('i'){
-
+                        todo!();
                     }
                     else if event.code==KeyCode::Char(':'){
                        command(terminal);
                     }
+                    if cy<padding as i32
+                    {
+                        cy=padding as i32;
+                        cx-=1;
+                    }
+                    if cy>terminal.tcols.into(){
+                        cx+=1;
+                        cy=0;
+                    }
+                    if cx<0{
+                        if terminal.line>0 {
+                            terminal.line-=1;
+                            visual(terminal);
+                        }
+                        cx = 0;
+                    }
+                    if cx>(terminal.trows-3).into(){
+                        if usize::from(terminal.line as u16+(terminal.trows-2))<terminal.text.len_lines()
+                        {
+                            terminal.line+=1;
+                            terminal.cx = terminal.trows-3;
+                            visual(terminal);
+                        }
+                        cx = terminal.trows as i32 -3;
+                    } 
+                    terminal.cx = cx as u16;
+                    terminal.cy = cy as u16;
+                    eterm!(move(terminal.cx,terminal.cy));
                 }
                 Event::Resize(width,height) => {
                     if height<=16 || width<= 50{ 
@@ -188,23 +241,26 @@ fn displaytext(terminal:&Term){
     let theme = assets.get_theme("OneHalfDark");
     let ps = SyntaxSet::load_defaults_newlines();
     let ts = ThemeSet::load_defaults();
-    let syntax = ps.find_syntax_by_extension("java").unwrap();
+    let syntax = ps.find_syntax_by_extension("rs").unwrap();
     let mut h = HighlightLines::new(syntax, &theme);
     let mut c:u16 = 0;
     let padding = (terminal.line as usize+terminal.trows as usize-2).to_string().len();
-    let mut line = 0;
+    let mut line = terminal.line;
+    qterm!(hide);
     while line<terminal.text.len_lines()&&c<terminal.trows-2 {
-        eterm!(move(c,0));
-        eterm!(color(fg,DarkGreen));
-        execute!(stdout(),Print(format!(" {:>width$} ",line,width=padding))).unwrap();
-        eterm!(color(fg,White));
+        qterm!(move(c,0));
+        qterm!(color(fg,DarkGreen));
+        queue!(stdout(),Print(format!(" {:>width$} ",line,width=padding))).unwrap();
+        qterm!(color(fg,White));
         let code = terminal.text.line(line).to_string();
         let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &ps).unwrap();
         let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
-        print!("{}", escaped);
+        queue!(stdout(),Print(format!("{}", escaped)));
         line+=1;
         c+=1;
     }
+    qterm!(show);
+    eterm!(flush);
 }
 fn command(terminal:&mut Term){
     eterm!(steadybar);
