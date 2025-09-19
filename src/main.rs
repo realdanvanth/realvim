@@ -424,7 +424,7 @@ fn logo(terminal: &mut Term) {
     println!("╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═══╝  ╚═╝╚═╝     ╚═╝");
     eterm!(move(rows/2+10,cols/2+10));
     eterm!(color(fg, Blue));
-    eterm!(print(" open a file with :open FileName  "));
+    eterm!(print(" open a file with :o FileName  "));
     eterm!(move(rows/2+11,cols/2+10));
     eterm!(print("󰈆 quit the editor with :q           "));
     //displaybar(&terminal);
