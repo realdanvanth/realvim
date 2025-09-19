@@ -1,0 +1,15 @@
+[package]
+name = "realvim"
+version = "0.1.0"
+edition = "2024"
+authors = ["realdanvanth <realdanvanth@gmail.com>"]
+description = "a lightweight terminal text editor"
+license-file = "LICENSE"
+[dependencies]
+crossterm = "0.29.0"
+proctitle = "0.1.1"
+ropey = "1.6.1"
+syntect = "5.2.0"
+syntect-assets = "0.23.6"
+tree-sitter-highlight = "0.25.9"
+tree-sitter-rust = "0.24.0"
