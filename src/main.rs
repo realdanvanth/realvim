@@ -226,6 +226,7 @@ fn visual(terminal: &mut Term) {
 
                             modsyntax(terminal,Scroll::Up);
                             displaytext(terminal);
+                            displaybar(&terminal);
                         }
                         cx = 0;
                     }
@@ -238,6 +239,7 @@ fn visual(terminal: &mut Term) {
                             //modsyntax disp text
                             modsyntax(terminal,Scroll::Down);
                             displaytext(terminal);
+                            displaybar(&terminal);
                         }
                         cx = terminal.trows as i32 - 3;
                     }
@@ -283,7 +285,8 @@ fn inittext(terminal: &mut Term) {
     let mut c: u16 = 0;
     let mut line = terminal.line;
     qterm!(hide);
-    while line < terminal.text.len_lines() && c < terminal.trows - 2 {                                                   let code = terminal.text.line(line).to_string();
+    while line < terminal.text.len_lines() && c < terminal.trows - 2 {                                                   
+        let code = terminal.text.line(line).to_string();
         let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &terminal.ps).unwrap();
         terminal.htext.push(as_24_bit_terminal_escaped(&ranges[..], false)); 
         line += 1;
@@ -291,6 +294,7 @@ fn inittext(terminal: &mut Term) {
     }
 }
 fn displaytext(terminal:&Term){ 
+    qterm!(clear);
     let mut c: usize = 0;
     let padding = (terminal.line as usize + terminal.trows as usize - 2)
         .to_string()
@@ -298,7 +302,6 @@ fn displaytext(terminal:&Term){
     let mut line = terminal.line;
     qterm!(hide);
     while c<terminal.htext.len(){
-        qterm!(clearline(c.try_into().unwrap(),terminal.tcols));
         qterm!(move(c.try_into().unwrap(),0));
         qterm!(color(fg, DarkGreen));
         queue!(
@@ -449,4 +452,3 @@ fn logo(terminal: &mut Term) {
         }
     }
 }
-fn highlight(line: &str) {}
