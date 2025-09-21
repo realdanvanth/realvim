@@ -4,7 +4,7 @@
 #![allow(unused_imports)]
 extern crate crossterm;
 use crossterm::cursor::SetCursorStyle::SteadyBar;
-use crossterm::event::{Event, KeyCode, poll, read};
+use crossterm::event::{poll, read, EnableMouseCapture,DisableMouseCapture, Event, KeyCode, MouseButton, MouseEvent, MouseEventKind};
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use crossterm::{ExecutableCommand, QueueableCommand, cursor, execute, queue, terminal};
@@ -140,6 +140,7 @@ fn clearup() {
     eterm!(show);
     eterm!(unraw);
     eterm!(move(0,0));
+    execute!(std::io::stdout(),EnableMouseCapture).unwrap();
     std::process::exit(0);
 }
 fn displaybar(terminal: &Term) {
@@ -194,6 +195,7 @@ fn visual(terminal: &mut Term) {
         terminal.cy = padding as u16
     }
     eterm!(move(terminal.cx,terminal.cy));
+    execute!(std::io::stdout(),EnableMouseCapture).unwrap();
     loop {
         if eterm!(poll(50)) {
             match read().unwrap() {
@@ -247,6 +249,43 @@ fn visual(terminal: &mut Term) {
                     terminal.cy = cy as u16;
                     eterm!(move(terminal.cx,terminal.cy));
                 }
+                Event::Mouse(event)=>{
+                    if event.kind == MouseEventKind::ScrollDown{
+                        cx += 1; 
+                    }
+                    else if event.kind == MouseEventKind::ScrollUp{
+                        cx -= 1;
+                    }
+                    if cx < 0 {
+                        if terminal.line > 0 {
+                            terminal.line -= 1;
+                            //mod syntax display text
+
+                            modsyntax(terminal,Scroll::Up);
+                            displaytext(terminal);
+                            displaybar(&terminal); 
+                        }
+                        cx = 0;
+                    }
+                    if cx > (terminal.trows - 3).into() {
+                        if usize::from(terminal.line as u16 + (terminal.trows - 2))
+                            < terminal.text.len_lines()
+                        {
+                            terminal.line += 1;
+                            terminal.cx = terminal.trows - 3;
+                            //modsyntax disp text
+                            modsyntax(terminal,Scroll::Down);
+                            displaytext(terminal);
+                            displaybar(&terminal);
+                        }
+                        cx = terminal.trows as i32 - 3;
+                    }
+                    terminal.cx = cx as u16;
+                    terminal.cy = cy as u16;
+                    eterm!(move(terminal.cx,terminal.cy+padding as u16));
+                    //eterm!(clear);
+                    //execute!(stdout(),Print(format!("{:?}",event.kind)));
+                },
                 Event::Resize(width, height) => {
                     if height <= 16 || width <= 50 {
                         clearup();
@@ -424,7 +463,7 @@ fn logo(terminal: &mut Term) {
     println!("╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═══╝  ╚═╝╚═╝     ╚═╝");
     eterm!(move(rows/2+10,cols/2+10));
     eterm!(color(fg, Blue));
-    eterm!(print(" open a file with :o FileName  "));
+    eterm!(print(" open a file with :open FileName  "));
     eterm!(move(rows/2+11,cols/2+10));
     eterm!(print("󰈆 quit the editor with :q           "));
     //displaybar(&terminal);
