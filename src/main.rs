@@ -4,17 +4,21 @@
 #![allow(unused_imports)]
 extern crate crossterm;
 use crossterm::cursor::SetCursorStyle::SteadyBar;
-use crossterm::event::{poll, read, EnableMouseCapture,DisableMouseCapture, Event, KeyCode, MouseButton, MouseEvent, MouseEventKind};
+use crossterm::event::{
+    DisableMouseCapture, EnableMouseCapture, Event, KeyCode, MouseButton, MouseEvent,
+    MouseEventKind, poll, read,
+};
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use crossterm::{ExecutableCommand, QueueableCommand, cursor, execute, queue, terminal};
 use proctitle::set_title;
 use ropey::Rope;
+use std::env;
 use std::fs::File;
-use std::{io, panic};
 use std::io::{BufReader, BufWriter, Write, stdout};
 use std::path::Path;
 use std::time::Duration;
+use std::{io, panic};
 use syntect::easy::HighlightLines;
 use syntect::highlighting;
 use syntect::highlighting::Theme;
@@ -23,7 +27,6 @@ use syntect::parsing::SyntaxReference;
 use syntect::parsing::SyntaxSet;
 use syntect::util::{LinesWithEndings, as_24_bit_terminal_escaped};
 use syntect_assets::assets::HighlightingAssets;
-use std::env;
 #[macro_export]
 macro_rules! eterm{
     (clear) => {stdout().execute(terminal::Clear(terminal::ClearType::All)).unwrap()};
@@ -91,7 +94,7 @@ enum Mode {
     Command,
 }
 #[derive(Debug)]
-enum Scroll{
+enum Scroll {
     Up,
     Down,
 }
@@ -103,8 +106,8 @@ struct Term {
     path: String,
     text: Rope,
     line: usize,
-    htext:Vec<String>,
-    cx: u16, 
+    htext: Vec<String>,
+    cx: u16,
     cy: u16,
     theme: Theme,
     ps: SyntaxSet,
@@ -115,7 +118,7 @@ fn main() {
     set_title("realvim");
     let assets = HighlightingAssets::from_binary();
     let ps = SyntaxSet::load_defaults_newlines();
-    let (cols,rows) = eterm!(size);
+    let (cols, rows) = eterm!(size);
     let mut terminal = Term {
         trows: rows,
         tcols: cols,
@@ -128,7 +131,7 @@ fn main() {
         theme: assets.get_theme("Visual Studio Dark+").clone(),
         syntax: ps.find_syntax_by_extension("rs").unwrap().clone(),
         ps: SyntaxSet::load_defaults_newlines(),
-        htext:Vec::new(),
+        htext: Vec::new(),
     };
     logo(&mut terminal);
     //println!("{:?}",terminal);
@@ -140,7 +143,7 @@ fn clearup() {
     eterm!(show);
     eterm!(unraw);
     eterm!(move(0,0));
-    execute!(std::io::stdout(),EnableMouseCapture).unwrap();
+    execute!(std::io::stdout(), DisableMouseCapture).unwrap();
     std::process::exit(0);
 }
 fn displaybar(terminal: &Term) {
@@ -195,7 +198,7 @@ fn visual(terminal: &mut Term) {
         terminal.cy = padding as u16
     }
     eterm!(move(terminal.cx,terminal.cy));
-    execute!(std::io::stdout(),EnableMouseCapture).unwrap();
+    execute!(std::io::stdout(), EnableMouseCapture).unwrap();
     loop {
         if eterm!(poll(50)) {
             match read().unwrap() {
@@ -226,7 +229,7 @@ fn visual(terminal: &mut Term) {
                             terminal.line -= 1;
                             //mod syntax display text
 
-                            modsyntax(terminal,Scroll::Up);
+                            modsyntax(terminal, Scroll::Up);
                             displaytext(terminal);
                             displaybar(&terminal);
                         }
@@ -239,7 +242,7 @@ fn visual(terminal: &mut Term) {
                             terminal.line += 1;
                             terminal.cx = terminal.trows - 3;
                             //modsyntax disp text
-                            modsyntax(terminal,Scroll::Down);
+                            modsyntax(terminal, Scroll::Down);
                             displaytext(terminal);
                             displaybar(&terminal);
                         }
@@ -249,11 +252,10 @@ fn visual(terminal: &mut Term) {
                     terminal.cy = cy as u16;
                     eterm!(move(terminal.cx,terminal.cy));
                 }
-                Event::Mouse(event)=>{
-                    if event.kind == MouseEventKind::ScrollDown{
-                        cx += 1; 
-                    }
-                    else if event.kind == MouseEventKind::ScrollUp{
+                Event::Mouse(event) => {
+                    if event.kind == MouseEventKind::ScrollDown {
+                        cx += 1;
+                    } else if event.kind == MouseEventKind::ScrollUp {
                         cx -= 1;
                     }
                     if cx < 0 {
@@ -261,9 +263,9 @@ fn visual(terminal: &mut Term) {
                             terminal.line -= 1;
                             //mod syntax display text
 
-                            modsyntax(terminal,Scroll::Up);
+                            modsyntax(terminal, Scroll::Up);
                             displaytext(terminal);
-                            displaybar(&terminal); 
+                            displaybar(&terminal);
                         }
                         cx = 0;
                     }
@@ -274,18 +276,17 @@ fn visual(terminal: &mut Term) {
                             terminal.line += 1;
                             terminal.cx = terminal.trows - 3;
                             //modsyntax disp text
-                            modsyntax(terminal,Scroll::Down);
+                            modsyntax(terminal, Scroll::Down);
                             displaytext(terminal);
                             displaybar(&terminal);
                         }
                         cx = terminal.trows as i32 - 3;
                     }
                     terminal.cx = cx as u16;
-                    terminal.cy = cy as u16;
-                    eterm!(move(terminal.cx,terminal.cy+padding as u16));
+                    eterm!(move(terminal.cx,terminal.cy));
                     //eterm!(clear);
                     //execute!(stdout(),Print(format!("{:?}",event.kind)));
-                },
+                }
                 Event::Resize(width, height) => {
                     if height <= 16 || width <= 50 {
                         clearup();
@@ -301,23 +302,26 @@ fn visual(terminal: &mut Term) {
         }
     }
 }
-fn modsyntax(terminal:&mut Term,dir:Scroll){
-    let mut h = HighlightLines::new(&terminal.syntax,&terminal.theme);
-    match dir{
+fn modsyntax(terminal: &mut Term, dir: Scroll) {
+    let mut h = HighlightLines::new(&terminal.syntax, &terminal.theme);
+    match dir {
         Scroll::Up => {
             terminal.htext.pop();
             let code = terminal.text.line(terminal.line).to_string();
             let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &terminal.ps).unwrap();
             let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
-            terminal.htext.insert(0,escaped);
-        },
-        Scroll::Down =>{
+            terminal.htext.insert(0, escaped);
+        }
+        Scroll::Down => {
             terminal.htext.remove(0);
-            let code = terminal.text.line(terminal.line+terminal.cx as usize).to_string();
+            let code = terminal
+                .text
+                .line(terminal.line + terminal.cx as usize)
+                .to_string();
             let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &terminal.ps).unwrap();
             let escaped = as_24_bit_terminal_escaped(&ranges[..], false);
             terminal.htext.push(escaped);
-        },
+        }
     };
 }
 fn inittext(terminal: &mut Term) {
@@ -325,15 +329,17 @@ fn inittext(terminal: &mut Term) {
     let mut c: u16 = 0;
     let mut line = terminal.line;
     qterm!(hide);
-    while line < terminal.text.len_lines() && c < terminal.trows - 2 {                                                   
+    while line < terminal.text.len_lines() && c < terminal.trows - 2 {
         let code = terminal.text.line(line).to_string();
         let ranges: Vec<(Style, &str)> = h.highlight_line(&code, &terminal.ps).unwrap();
-        terminal.htext.push(as_24_bit_terminal_escaped(&ranges[..], false)); 
+        terminal
+            .htext
+            .push(as_24_bit_terminal_escaped(&ranges[..], false));
         line += 1;
         c += 1;
     }
 }
-fn displaytext(terminal:&Term){ 
+fn displaytext(terminal: &Term) {
     qterm!(clear);
     let mut c: usize = 0;
     let padding = (terminal.line as usize + terminal.trows as usize - 2)
@@ -341,7 +347,7 @@ fn displaytext(terminal:&Term){
         .len();
     let mut line = terminal.line;
     qterm!(hide);
-    while c<terminal.htext.len(){
+    while c < terminal.htext.len() {
         qterm!(move(c.try_into().unwrap(),0));
         qterm!(color(fg, DarkGreen));
         queue!(
@@ -435,7 +441,7 @@ fn command(terminal: &mut Term) {
             }))
             .unwrap();
             visual(terminal);
-        },
+        }
         _ => {
             command(terminal);
         }
