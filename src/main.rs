@@ -113,6 +113,7 @@ struct Term {
     ps: SyntaxSet,
     syntax: SyntaxReference,
 }
+//test
 fn main() {
     //let mode:Mode = Mode::Logo;
     set_title("realvim");
