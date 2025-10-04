@@ -139,6 +139,11 @@ fn main() {
     //visual(&mut rows,&mut cols,"sample.txt");
     //command(&mut rows,&mut cols);
 }
+/*fn filesearch() -> String {
+    let command = Command::new("fzf").output().expecet("failed open fzf");
+    eterm!(move(0,0));
+    execute!(stdout(), Print(format!("")))
+}*/
 fn clearup() {
     eterm!(clear);
     eterm!(show);
@@ -167,6 +172,7 @@ fn displaybar(terminal: &Term) {
             eterm!(print("LOGO   "));
         }
     };
+    execute!(stdout(), Print(format!("{}", &terminal.line))).unwrap();
     eterm!(move(terminal.trows-2,terminal.tcols-terminal.path.len()as u16));
     execute!(stdout(), Print(&terminal.path)).unwrap();
     eterm!(color(bg, Black));
@@ -213,6 +219,7 @@ fn visual(terminal: &mut Term) {
                     } else if event.code == KeyCode::Char('d') {
                         cy += 1
                     } else if event.code == KeyCode::Char('i') {
+                        //insert(terminal);
                         todo!();
                     } else if event.code == KeyCode::Char(':') {
                         command(terminal);
@@ -287,6 +294,46 @@ fn visual(terminal: &mut Term) {
                     eterm!(move(terminal.cx,terminal.cy));
                     //eterm!(clear);
                     //execute!(stdout(),Print(format!("{:?}",event.kind)));
+                }
+                Event::Resize(width, height) => {
+                    if height <= 16 || width <= 50 {
+                        clearup();
+                    }
+                    terminal.tcols = width;
+                    terminal.trows = height;
+                    visual(terminal);
+                }
+                _ => {
+                    continue;
+                }
+            }
+        }
+    }
+}
+fn insert(terminal: &mut Term) {
+    terminal.mode = Mode::Insert;
+    displaybar(terminal);
+    let padding = (terminal.line as usize + terminal.trows as usize - 2)
+        .to_string()
+        .len()
+        + 2;
+    let mut cx: i32 = terminal.cx as i32;
+    let mut cy: i32 = terminal.cy as i32;
+    if terminal.cy < padding as u16 {
+        terminal.cy = padding as u16
+    }
+    eterm!(move(terminal.cx,terminal.cy));
+    loop {
+        if eterm!(poll(50)) {
+            match read().unwrap() {
+                Event::Key(event) => {
+                    if event.code == KeyCode::Enter {
+                    } else if event.code == KeyCode::Backspace {
+                    } else {
+                        let mut index = terminal.text.line_to_char(terminal.line);
+                        index += cy as usize - padding;
+                        terminal.text.insert(index, &format!("{}", event.code));
+                    }
                 }
                 Event::Resize(width, height) => {
                     if height <= 16 || width <= 50 {
