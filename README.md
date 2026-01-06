@@ -7,7 +7,7 @@ minimal text editor in Rust inspired by neovim
 **Installation**
 
 ```install
-sudo pacman -S realvim
+yay -S realvim
 ```
 
 # Text Editor Navigation Guide
